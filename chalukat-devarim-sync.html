@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>חלוקת ספר דברים — מסונכרן</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#F6F2E9; --surface:#FFFFFF; --surface-2:#FCF9F1; --ink:#29241C; --muted:#7A7161;
+    --primary:#1C3B5A; --primary-700:#132a41; --gold:#A9812F; --gold-soft:#EADFBE;
+    --border:#E5DCC9; --open:#4E6B3E; --open-bg:#EEF2E4; --closed:#8A6D3B; --closed-bg:#F3EAD6;
+    --danger:#9B3B2E; --wa:#25806b; --wa-bg:#e5f2ee; --radius:14px; --shadow:0 1px 2px rgba(41,36,28,.05), 0 8px 24px -12px rgba(28,59,90,.18);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:"Heebo",system-ui,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased;min-height:100vh}
+  .serif{font-family:"Frank Ruhl Libre",Georgia,serif}
+  header.top{background:radial-gradient(120% 140% at 100% 0%, rgba(169,129,47,.14), transparent 55%),linear-gradient(180deg,var(--primary),var(--primary-700));color:#F6F2E9;padding:30px 20px 26px;border-bottom:3px solid var(--gold)}
+  .top-inner{max-width:860px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+  .kicker{font-size:13px;letter-spacing:.14em;color:var(--gold-soft);display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .kicker::before{content:"";height:1px;width:26px;background:var(--gold)}
+  h1.title{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:clamp(28px,6vw,40px);line-height:1.05;margin:0;letter-spacing:-.01em}
+  .subtitle{color:#D9E0E6;margin:6px 0 0;font-size:14px;max-width:44ch}
+  .whoami{display:flex;align-items:center;gap:10px;font-size:13px;color:#CBD5DF;flex-wrap:wrap;justify-content:flex-end}
+  main{max-width:860px;margin:0 auto;padding:22px 18px 80px}
+  .row-between{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .section-label{font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:22px;margin:0}
+  button{font-family:inherit;cursor:pointer;border:none;font-size:15px}
+  .btn{display:inline-flex;align-items:center;gap:8px;justify-content:center;background:var(--primary);color:#fff;border-radius:11px;padding:11px 18px;font-weight:500;transition:background .15s ease, transform .05s ease}
+  .btn:hover{background:var(--primary-700)} .btn:active{transform:translateY(1px)}
+  .btn.gold{background:var(--gold)} .btn.gold:hover{background:#8f6d26}
+  .btn.wa{background:var(--wa)} .btn.wa:hover{background:#1d6555}
+  .btn.ghost{background:transparent;color:var(--primary);border:1.5px solid var(--border)} .btn.ghost:hover{background:var(--surface-2)}
+  .btn.small{padding:8px 13px;font-size:14px;border-radius:9px}
+  .btn.block{width:100%}
+  .btn.danger{background:transparent;color:var(--danger);border:1.5px solid #E7CFC9} .btn.danger:hover{background:#faf0ee}
+  .btn.danger-solid{background:var(--danger);color:#fff} .btn.danger-solid:hover{background:#7f2f24}
+  .btn:disabled{opacity:.5;cursor:default}
+  .link{background:none;color:var(--primary);padding:6px 4px;font-weight:500;display:inline-flex;align-items:center;gap:6px} .link:hover{text-decoration:underline}
+  .link.subtle{color:#CBD5DF} .link.mut{color:var(--muted)}
+  .grid{display:grid;gap:14px;margin-top:16px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+  .event-card h3{font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:20px;margin:0 0 4px}
+  .event-card p.desc{color:var(--muted);margin:0 0 12px;font-size:14.5px}
+  .meta{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:13.5px;margin-bottom:14px}
+  .meta b{color:var(--ink);font-weight:500}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;padding:4px 10px;border-radius:999px}
+  .pill.open{background:var(--open-bg);color:var(--open)} .pill.closed{background:var(--closed-bg);color:var(--closed)}
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .tabs{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:4px;gap:4px;margin:14px 0 2px}
+  .tab{background:transparent;border-radius:9px;padding:8px 16px;font-weight:500;color:var(--muted)}
+  .tab.active{background:#fff;color:var(--primary);box-shadow:0 1px 4px rgba(28,59,90,.12)}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-weight:500;font-size:14px;margin-bottom:6px}
+  .field .hint{color:var(--muted);font-size:12.5px;margin:-2px 0 6px}
+  input,textarea,select{width:100%;font-family:inherit;font-size:15px;color:var(--ink);background:var(--surface-2);border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;transition:border-color .15s, background .15s}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary);background:#fff}
+  textarea{resize:vertical;min-height:70px}
+  .seg{display:flex;gap:8px}
+  .seg button{flex:1;background:var(--surface-2);border:1.5px solid var(--border);border-radius:10px;padding:12px;font-weight:500;color:var(--ink)}
+  .seg button.active{border-color:var(--primary);background:#fff;box-shadow:inset 0 0 0 1px var(--primary)}
+  .seg button .sub{display:block;font-size:12px;color:var(--muted);font-weight:400;margin-top:2px}
+  .addrow{display:flex;gap:8px;flex-wrap:wrap}
+  .addrow .nm{flex:2;min-width:140px} .addrow .ph{flex:1;min-width:110px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:6px 8px 6px 12px;font-size:14px}
+  .chip small{color:var(--muted)}
+  .chip .x{width:20px;height:20px;border-radius:50%;background:#Ebe2d0;color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;border:none}
+  .chip .x:hover{background:var(--danger);color:#fff}
+  .summary{background:linear-gradient(180deg,#fff,var(--surface-2));border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;display:flex;gap:22px;flex-wrap:wrap;box-shadow:var(--shadow)}
+  .stat .n{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:30px;line-height:1;color:var(--primary)}
+  .stat .l{font-size:13px;color:var(--muted);margin-top:3px}
+  .group-head{display:flex;align-items:baseline;gap:10px;margin:26px 0 8px;padding-bottom:8px;border-bottom:2px solid var(--gold-soft)}
+  .group-head .gname{font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:20px}
+  .group-head .gsub{font-size:13px;color:var(--muted)}
+  .assign{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px solid var(--border)}
+  .assign:last-child{border-bottom:none}
+  .assign .who{font-weight:500;flex:1;min-width:90px}
+  .assign .parts{display:flex;gap:6px;flex-wrap:wrap}
+  .tag{background:var(--surface-2);border:1px solid var(--border);color:var(--primary);font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;white-space:nowrap}
+  .wa-mini{background:var(--wa-bg);color:var(--wa);border:1px solid #cfe6de;border-radius:8px;padding:5px 9px;font-size:12.5px;font-weight:500;white-space:nowrap}
+  .wa-mini:hover{background:var(--wa);color:#fff}
+  .assign.me{background:var(--gold-soft);border-radius:10px;padding-inline:12px;border-bottom:none;outline:2px solid var(--gold)}
+  .assign.me .tag{background:#fff;border-color:var(--gold)}
+  .empty{text-align:center;padding:44px 20px;color:var(--muted)}
+  .empty .em-title{font-family:"Frank Ruhl Libre",serif;font-size:20px;color:var(--ink);margin-bottom:6px}
+  .notice{font-size:12.5px;color:var(--muted);margin-top:26px;text-align:center;line-height:1.6}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--primary);color:#fff;padding:11px 20px;border-radius:11px;box-shadow:0 10px 30px -8px rgba(0,0,0,.4);font-size:14px;z-index:80;opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;max-width:90vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+  .toast.err{background:var(--danger)}
+  .modal-overlay{position:fixed;inset:0;background:rgba(28,32,40,.5);display:flex;align-items:center;justify-content:center;padding:20px;z-index:90;animation:fade .2s ease both}
+  .modal{background:var(--surface);border-radius:var(--radius);box-shadow:0 20px 60px -20px rgba(0,0,0,.5);padding:20px;max-width:440px;width:100%;max-height:85vh;overflow:auto}
+  .list-pick{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 6px;border-bottom:1px solid var(--border)}
+  .list-pick:last-child{border-bottom:none}
+  .auth-wrap{max-width:440px;margin:34px auto 0}
+  .auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:26px 24px}
+  .auth-card h2{font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:24px;margin:0 0 6px}
+  .auth-card p.sub{color:var(--muted);font-size:14px;margin:0 0 18px}
+  .err{color:var(--danger);font-size:13.5px;margin:8px 0 0;min-height:18px}
+  details.setup{margin-top:18px;border-top:1px solid var(--border);padding-top:14px}
+  details.setup summary{cursor:pointer;font-weight:500;color:var(--primary)}
+  .steps{font-size:14px;color:var(--ink);line-height:1.7;margin:12px 0}
+  .steps li{margin-bottom:6px}
+  .sqlbox{width:100%;height:150px;font-family:ui-monospace,monospace;font-size:12px;direction:ltr;text-align:left;background:#12293F;color:#dCE6f0;border:none;border-radius:10px;padding:12px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+  .fade{animation:fade .28s ease both}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="top-inner">
+      <div>
+        <div class="kicker">בס״ד · מסונכרן</div>
+        <h1 class="title">חלוקת ספר דברים</h1>
+        <p class="subtitle">ניהול אירועים וחלוקת פרשות — מסונכרן ביניכם בכל מכשיר.</p>
+      </div>
+      <div class="whoami" id="whoami"></div>
+    </div>
+  </header>
+  <main id="app"></main>
+  <div class="toast" id="toast"></div>
+
+<script>
+/* ===================== Config ===================== */
+const CFG_URL="";      // אפשר להזין כאן ישירות את כתובת הפרויקט (לא חובה)
+const CFG_KEY="";      // ואת מפתח ה-anon (לא חובה) — אחרת מזינים במסך ההגדרה
+function getCfg(){ if(CFG_URL&&CFG_KEY)return{url:CFG_URL,key:CFG_KEY}; try{const v=localStorage.getItem("devarim:cfg");return v?JSON.parse(v):null;}catch(e){return null;} }
+function setCfg(url,key){ try{localStorage.setItem("devarim:cfg",JSON.stringify({url,key}));}catch(e){} }
+function clearCfg(){ try{localStorage.removeItem("devarim:cfg");}catch(e){} }
+
+const SETUP_SQL=`-- הדביקו והריצו ב-SQL Editor של Supabase
+create table if not exists events (
+  id uuid primary key default gen_random_uuid(),
+  name text not null, description text default '',
+  reg_end timestamptz not null, division text not null default 'parashot',
+  closed boolean not null default false, created_at timestamptz not null default now());
+create table if not exists participants (
+  id uuid primary key default gen_random_uuid(),
+  event_id uuid not null references events(id) on delete cascade,
+  name text not null, phone text default '', created_at timestamptz not null default now());
+create table if not exists lists (
+  id uuid primary key default gen_random_uuid(),
+  name text not null, created_at timestamptz not null default now());
+create table if not exists list_members (
+  id uuid primary key default gen_random_uuid(),
+  list_id uuid not null references lists(id) on delete cascade,
+  name text not null, phone text default '');
+
+alter table events enable row level security;
+alter table participants enable row level security;
+alter table lists enable row level security;
+alter table list_members enable row level security;
+
+create policy "auth all events" on events for all to authenticated using (true) with check (true);
+create policy "auth all participants" on participants for all to authenticated using (true) with check (true);
+create policy "auth all lists" on lists for all to authenticated using (true) with check (true);
+create policy "auth all members" on list_members for all to authenticated using (true) with check (true);
+
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on events, participants, lists, list_members to authenticated;`;
+
+/* ===================== Hebrew numerals ===================== */
+function heNum(n){if(n===15)return"טו";if(n===16)return"טז";const o=["","א","ב","ג","ד","ה","ו","ז","ח","ט"],t=["","י","כ","ל","מ"];return(t[Math.floor(n/10)]||"")+(o[n%10]||"");}
+function heNumP(n){let s=heNum(n);return s.length===1?s+"׳":s.slice(0,-1)+"״"+s.slice(-1);}
+const PARASHOT=["דברים","ואתחנן","עקב","ראה","שופטים","כי תצא","כי תבוא","נצבים","וילך","האזינו","וזאת הברכה"];
+const PERAKIM=Array.from({length:34},(_,i)=>"פרק "+heNumP(i+1));
+const DIVISIONS={parashot:{label:"פרשות",parts:PARASHOT},perakim:{label:"פרקים",parts:PERAKIM}};
+
+/* ===================== Distribution =====================
+   כלל: כל אדם מקבל לפחות חלק שלם אחד, מחולק שווה ככל האפשר.
+   כשמספר הנרשמים עולה על מספר החלקים — נפתח מחזור נוסף
+   (ספר דברים נוסף), והנרשמים מתחלקים בין המחזורים באופן שווה. */
+function splitEvenly(a,k){const n=a.length,b=Math.floor(n/k),r=n%k,o=[];let i=0;for(let g=0;g<k;g++){const s=b+(g<r?1:0);o.push(a.slice(i,i+s));i+=s;}return o;}
+function assignParts(pl,P){const k=pl.length,res=[];if(!k)return res;const b=Math.floor(P/k),r=P%k;let p=0;for(let i=0;i<k;i++){const c=b+(i<r?1:0),parts=[];for(let j=0;j<c;j++)parts.push(p++);res.push({person:pl[i],parts});}return res;}
+function distribute(pl,P){const n=pl.length;if(!n)return{groups:[],numGroups:0};const ng=Math.max(1,Math.ceil(n/P));return{groups:splitEvenly(pl,ng).map(g=>assignParts(g,P)),numGroups:ng};}
+
+/* ===================== Helpers ===================== */
+const esc=s=>(s==null?"":String(s)).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function isOpen(ev){return !ev.closed && new Date(ev.regEnd).getTime()>Date.now();}
+function fmtDate(iso){const d=new Date(iso);return d.toLocaleDateString("he-IL",{day:"numeric",month:"long",year:"numeric"})+" · "+d.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"});}
+function toast(m,isErr){const t=document.getElementById("toast");t.textContent=m;t.className="toast show"+(isErr?" err":"");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2600);}
+function inputDate(iso){const d=iso?new Date(iso):new Date(Date.now()+7*864e5);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16);}
+
+/* WhatsApp */
+function waPhone(raw){let d=(raw||"").replace(/\D/g,"");if(!d)return"";if(d.startsWith("972"))return d;if(d.startsWith("0"))return"972"+d.slice(1);return d;}
+function waLink(phone,text){const p=waPhone(phone);return(p?`https://wa.me/${p}`:`https://wa.me/`)+`?text=${encodeURIComponent(text)}`;}
+function distText(ev,regs,div){const parts=div.parts,{groups}=distribute(regs,parts.length);const L=['בס"ד','חלוקת ספר דברים — '+ev.name,''];groups.forEach((g,gi)=>{if(groups.length>1)L.push('מחזור '+(gi+1)+':');g.forEach(a=>L.push('• '+a.person.name+' — '+a.parts.map(p=>parts[p]).join(', ')));L.push('');});L.push('שנזכה לסיים בשעה טובה ומוצלחת!');return L.join('\n');}
+function personText(ev,name,partNames){return `שלום ${name},\nבמסגרת "${ev.name}" — חלוקת ספר דברים, חלקך הוא:\n${partNames.join(', ')}\n\nתודה, ובהצלחה!`;}
+
+/* ===================== Modals ===================== */
+function modal(html){const o=document.createElement("div");o.className="modal-overlay";o.innerHTML=`<div class="modal">${html}</div>`;document.body.appendChild(o);o.addEventListener("click",e=>{if(e.target===o)o.remove();});return o;}
+function confirmModal(msg,okLabel="מחיקה"){return new Promise(res=>{const o=modal(`<p style="margin:0 0 18px;font-size:15px">${esc(msg)}</p><div style="display:flex;gap:8px"><button class="btn danger-solid" data-y>${esc(okLabel)}</button><button class="btn ghost" data-n>ביטול</button></div>`);o.querySelector("[data-y]").onclick=()=>{o.remove();res(true);};o.querySelector("[data-n]").onclick=()=>{o.remove();res(false);};});}
+function promptModal(title,val="",okLabel="שמירה"){return new Promise(res=>{const o=modal(`<h3 class="serif" style="margin:0 0 12px;font-size:19px">${esc(title)}</h3><input id="pm" type="text" value="${esc(val)}"><div style="display:flex;gap:8px;margin-top:14px"><button class="btn" data-ok>${esc(okLabel)}</button><button class="btn ghost" data-c>ביטול</button></div>`);const inp=o.querySelector("#pm");setTimeout(()=>{inp.focus();inp.select();},30);o.querySelector("[data-ok]").onclick=()=>{o.remove();res(inp.value.trim());};o.querySelector("[data-c]").onclick=()=>{o.remove();res(null);};inp.addEventListener("keydown",e=>{if(e.key==="Enter"){o.remove();res(inp.value.trim());}});});}
+
+/* ===================== Supabase data layer ===================== */
+let sb=null, currentUser=null;
+function mapEvent(r){return{id:r.id,name:r.name,desc:r.description||"",regEnd:r.reg_end,division:r.division||"parashot",closed:!!r.closed,createdAt:new Date(r.created_at).getTime()};}
+async function apiEvents(){const{data,error}=await sb.from("events").select("*, participants(count)").order("created_at",{ascending:false});if(error)throw error;return data.map(r=>({...mapEvent(r),count:(r.participants&&r.participants[0]?r.participants[0].count:0)}));}
+async function apiCreateEvent(o){const{data,error}=await sb.from("events").insert({name:o.name,description:o.desc,reg_end:o.regEnd,division:o.division,closed:false}).select().single();if(error)throw error;return data.id;}
+async function apiUpdateEvent(id,p){const patch={};if("name"in p)patch.name=p.name;if("desc"in p)patch.description=p.desc;if("regEnd"in p)patch.reg_end=p.regEnd;if("division"in p)patch.division=p.division;if("closed"in p)patch.closed=p.closed;const{error}=await sb.from("events").update(patch).eq("id",id);if(error)throw error;}
+async function apiDeleteEvent(id){const{error}=await sb.from("events").delete().eq("id",id);if(error)throw error;}
+async function apiParticipants(eventId){const{data,error}=await sb.from("participants").select("*").eq("event_id",eventId).order("created_at",{ascending:true});if(error)throw error;return data.map(r=>({id:r.id,name:r.name,phone:r.phone||"",at:new Date(r.created_at).getTime()}));}
+async function apiAddParticipants(eventId,arr){if(!arr.length)return;const{error}=await sb.from("participants").insert(arr.map(m=>({event_id:eventId,name:m.name,phone:m.phone||""})));if(error)throw error;}
+async function apiRemoveParticipant(id){const{error}=await sb.from("participants").delete().eq("id",id);if(error)throw error;}
+async function apiLists(){const{data,error}=await sb.from("lists").select("*, list_members(*)").order("name");if(error)throw error;return data.map(l=>({id:l.id,name:l.name,members:(l.list_members||[]).map(m=>({id:m.id,name:m.name,phone:m.phone||""}))}));}
+async function apiCreateList(name){const{data,error}=await sb.from("lists").insert({name}).select().single();if(error)throw error;return data.id;}
+async function apiRenameList(id,name){const{error}=await sb.from("lists").update({name}).eq("id",id);if(error)throw error;}
+async function apiDeleteList(id){const{error}=await sb.from("lists").delete().eq("id",id);if(error)throw error;}
+async function apiAddMembers(listId,arr){if(!arr.length)return;const{error}=await sb.from("list_members").insert(arr.map(m=>({list_id:listId,name:m.name,phone:m.phone||""})));if(error)throw error;}
+async function apiRemoveMember(id){const{error}=await sb.from("list_members").delete().eq("id",id);if(error)throw error;}
+
+/* ===================== State + boot ===================== */
+const app=document.getElementById("app");
+let state={view:"home",tab:"active",eventId:null,listId:null,editEvent:null,search:""};
+function go(view,extra={}){Object.assign(state,{eventId:null,listId:null,editEvent:null,search:""},extra,{view});render();}
+async function guard(fn){try{await fn();}catch(e){toast(e.message||"שגיאה בחיבור לשרת",true);}}
+
+(async function boot(){
+  const cfg=getCfg();
+  if(!cfg){renderConfig();return;}
+  if(!window.supabase){renderFatal("ספריית Supabase לא נטענה. צריך חיבור לאינטרנט כדי להפעיל את האפליקציה.");return;}
+  try{ sb=window.supabase.createClient(cfg.url,cfg.key); }
+  catch(e){ renderConfig("ההגדרות לא תקינות — בדקו את הכתובת והמפתח.");return; }
+  const{data:{session}}=await sb.auth.getSession();
+  currentUser=session?session.user:null;
+  render();
+})();
+
+function renderFatal(msg){document.getElementById("whoami").innerHTML="";app.innerHTML=`<div class="auth-wrap fade"><div class="auth-card"><h2>לא ניתן לטעון</h2><p class="sub">${esc(msg)}</p></div></div>`;}
+
+async function render(){
+  const wa=document.getElementById("whoami");
+  if(currentUser){
+    wa.innerHTML=`<span>${esc(currentUser.email||"")}</span><span>·</span><button class="link subtle" id="nav-lists">רשימות</button><span>·</span><button class="link subtle" id="logout">יציאה</button>`;
+    wa.querySelector("#nav-lists").onclick=()=>go("lists");
+    wa.querySelector("#logout").onclick=async()=>{await sb.auth.signOut();currentUser=null;render();};
+  }else wa.innerHTML="";
+  if(!sb){renderConfig();return;}
+  if(!currentUser){renderLogin();return;}
+  if(state.view==="home")   return renderHome();
+  if(state.view==="event")  return renderEvent();
+  if(state.view==="create") return renderForm();
+  if(state.view==="lists")  return renderLists();
+  if(state.view==="list")   return renderListDetail();
+  renderHome();
+}
+
+/* ===================== Config screen ===================== */
+function renderConfig(errMsg){
+  document.getElementById("whoami").innerHTML="";
+  const cfg=getCfg()||{url:"",key:""};
+  app.innerHTML=`<div class="auth-wrap fade"><div class="auth-card">
+    <h2>חיבור למסד הנתונים</h2>
+    <p class="sub">כדי לסנכרן בין המכשירים, מזינים פעם אחת את פרטי הפרויקט מ-Supabase (חינם). הפרטים נשמרים במכשיר הזה.</p>
+    <div class="field"><label for="c-url">כתובת הפרויקט (Project URL)</label><input id="c-url" type="text" dir="ltr" placeholder="https://xxxx.supabase.co" value="${esc(cfg.url)}"></div>
+    <div class="field"><label for="c-key">מפתח anon (anon public key)</label><input id="c-key" type="text" dir="ltr" placeholder="eyJhbGciOi..." value="${esc(cfg.key)}"></div>
+    <button class="btn block" id="c-save">שמירה והמשך</button>
+    <p class="err" id="err">${errMsg?esc(errMsg):""}</p>
+    <details class="setup">
+      <summary>הוראות הקמה מלאות (5 דקות)</summary>
+      <ol class="steps">
+        <li>נכנסים ל-<b>supabase.com</b>, נרשמים בחינם ויוצרים פרויקט חדש (בוחרים אזור קרוב כמו Frankfurt).</li>
+        <li>בתפריט הפרויקט: <b>SQL Editor → New query</b>, מדביקים את הקוד למטה ולוחצים <b>Run</b>.</li>
+        <li><b>Authentication → Users → Add user</b>: יוצרים משתמש לך ומשתמש לאשתך (אימייל + סיסמה, מסמנים Auto Confirm).</li>
+        <li><b>Authentication → Sign In / Providers</b> (או Settings): <b>מכבים</b> את האפשרות להרשמת משתמשים חדשים (Allow new users to sign up) — כך רק החשבונות שיצרתם יוכלו להתחבר. חשוב במיוחד כשמארחים באתר ציבורי.</li>
+        <li><b>Project Settings → API</b>: מעתיקים את ה-<b>Project URL</b> ואת מפתח ה-<b>anon public</b> ומדביקים למעלה.</li>
+      </ol>
+      <textarea class="sqlbox" readonly id="sql">${esc(SETUP_SQL)}</textarea>
+      <button class="btn ghost small" id="copy-sql" style="margin-top:8px">העתקת קוד ה-SQL</button>
+    </details>
+  </div></div>`;
+  app.querySelector("#c-save").onclick=()=>{
+    const url=app.querySelector("#c-url").value.trim().replace(/\/+$/,""),key=app.querySelector("#c-key").value.trim();
+    if(!/^https:\/\/.+\.supabase\.co$/.test(url)){app.querySelector("#err").textContent="כתובת הפרויקט לא נראית תקינה.";return;}
+    if(key.length<20){app.querySelector("#err").textContent="מפתח anon לא תקין.";return;}
+    setCfg(url,key);location.reload();
+  };
+  const cp=app.querySelector("#copy-sql");if(cp)cp.onclick=()=>{const t=app.querySelector("#sql");t.select();try{document.execCommand("copy");toast("קוד ה-SQL הועתק");}catch(e){toast("סמנו והעתיקו ידנית",true);}};
+}
+
+/* ===================== Login ===================== */
+function renderLogin(){
+  app.innerHTML=`<div class="auth-wrap fade"><div class="auth-card">
+    <h2>כניסה</h2>
+    <p class="sub">התחברו עם האימייל והסיסמה שיצרתם ב-Supabase.</p>
+    <div class="field"><label for="l-email">אימייל</label><input id="l-email" type="email" dir="ltr" autocomplete="username"></div>
+    <div class="field"><label for="l-pass">סיסמה</label><input id="l-pass" type="password" autocomplete="current-password"></div>
+    <button class="btn block" id="l-go">כניסה</button>
+    <p class="err" id="err"></p>
+    <button class="link mut" id="reconfig" style="margin-top:10px">החלפת פרטי חיבור</button>
+  </div></div>`;
+  const err=app.querySelector("#err"),email=app.querySelector("#l-email"),pass=app.querySelector("#l-pass");
+  setTimeout(()=>email.focus(),30);
+  async function login(){
+    err.style.color="var(--danger)";err.textContent="";
+    const{data,error}=await sb.auth.signInWithPassword({email:email.value.trim(),password:pass.value});
+    if(error){err.textContent=/invalid/i.test(error.message)?"אימייל או סיסמה שגויים.":error.message;return;}
+    currentUser=data.user;go("home");
+  }
+  app.querySelector("#l-go").onclick=login;
+  pass.addEventListener("keydown",e=>{if(e.key==="Enter")login();});
+  app.querySelector("#reconfig").onclick=()=>{clearCfg();location.reload();};
+}
+
+/* ===================== Home ===================== */
+async function renderHome(){
+  app.innerHTML=`<p class="notice" style="margin-top:40px">טוען…</p>`;
+  await guard(async()=>{
+    const events=await apiEvents();
+    const active=events.filter(isOpen),past=events.filter(e=>!isOpen(e));
+    const shown=state.tab==="active"?active:past;
+    let cards="";
+    if(shown.length===0){
+      cards=`<div class="empty fade"><div class="em-title">${state.tab==="active"?"אין אירועים פעילים":"אין אירועי עבר"}</div><div>${state.tab==="active"?"צרו אירוע חדש כדי להתחיל.":"אירועים שההרשמה בהם נסגרה יופיעו כאן."}</div></div>`;
+    }else{
+      for(const ev of shown){
+        const open=isOpen(ev),dl=DIVISIONS[ev.division].label;
+        cards+=`<div class="card event-card fade">
+          <div class="row-between" style="align-items:flex-start"><h3>${esc(ev.name)}</h3><span class="pill ${open?"open":"closed"}"><span class="dot"></span>${open?"פתוח":"נסגר"}</span></div>
+          ${ev.desc?`<p class="desc">${esc(ev.desc)}</p>`:""}
+          <div class="meta"><span>${open?"נסגר":"נסגר ב"}: <b>${fmtDate(ev.regEnd)}</b></span><span>לפי <b>${dl}</b></span><span>משתתפים: <b>${ev.count}</b></span></div>
+          <div class="row-between"><div style="display:flex;gap:8px"><button class="btn small" data-open="${ev.id}">${open?"ניהול משתתפים":"צפייה בחלוקה"}</button><button class="btn small ghost" data-edit="${ev.id}">עריכה</button></div><button class="link mut" data-del="${ev.id}">מחיקה</button></div>
+        </div>`;
+      }
+    }
+    app.innerHTML=`
+      <div class="row-between"><h2 class="section-label">האירועים</h2><button class="btn" id="new-ev">+ אירוע חדש</button></div>
+      <div class="tabs"><button class="tab ${state.tab==="active"?"active":""}" data-tab="active">פעילים (${active.length})</button><button class="tab ${state.tab==="past"?"active":""}" data-tab="past">עבר (${past.length})</button></div>
+      <div class="grid">${cards}</div>
+      <p class="notice">הנתונים מסונכרנים בין כל המכשירים המחוברים לחשבון.</p>`;
+    app.querySelector("#new-ev").onclick=()=>go("create");
+    app.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{state.tab=b.dataset.tab;render();});
+    app.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>go("event",{eventId:b.dataset.open}));
+    app.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{const ev=events.find(e=>e.id===b.dataset.edit);go("create",{editEvent:ev});});
+    app.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{if(!await confirmModal("למחוק את האירוע וכל המשתתפים שלו?"))return;await guard(async()=>{await apiDeleteEvent(b.dataset.del);toast("האירוע נמחק");render();});});
+  });
+}
+
+/* ===================== Create / Edit ===================== */
+function renderForm(){
+  const ev=state.editEvent,editing=!!ev;
+  const def=inputDate(editing?ev.regEnd:null),div=editing?ev.division:"parashot";
+  app.innerHTML=`
+    <button class="link" id="back">→ חזרה</button>
+    <div class="card fade" style="margin-top:12px">
+      <h2 class="section-label" style="margin-bottom:16px">${editing?"עריכת אירוע":"אירוע חדש"}</h2>
+      <div class="field"><label for="f-name">שם האירוע</label><input id="f-name" type="text" maxlength="80" value="${editing?esc(ev.name):""}" placeholder="לדוגמה: לרפואת… / לעילוי נשמת…"></div>
+      <div class="field"><label for="f-desc">תיאור (לא חובה)</label><textarea id="f-desc" maxlength="300" placeholder="פרטים, מטרת הלימוד…">${editing?esc(ev.desc||""):""}</textarea></div>
+      <div class="field"><label for="f-end">סגירת ההרשמה</label><div class="hint">אחרי המועד תוצג החלוקה. אפשר גם לסגור ידנית מתוך האירוע.</div><input id="f-end" type="datetime-local" value="${def}"></div>
+      <div class="field"><label>שיטת חלוקה</label><div class="seg" id="f-div">
+        <button type="button" data-d="parashot" class="${div==="parashot"?"active":""}">לפי פרשות<span class="sub">11 חלקים</span></button>
+        <button type="button" data-d="perakim" class="${div==="perakim"?"active":""}">לפי פרקים<span class="sub">34 חלקים</span></button>
+      </div></div>
+      <button class="btn block" id="save">${editing?"שמירת שינויים":"צור אירוע"}</button>
+    </div>`;
+  let chosen=div;
+  app.querySelector("#back").onclick=()=>go(editing?"event":"home",editing?{eventId:ev.id}:{});
+  app.querySelectorAll("#f-div button").forEach(b=>b.onclick=()=>{app.querySelectorAll("#f-div button").forEach(x=>x.classList.remove("active"));b.classList.add("active");chosen=b.dataset.d;});
+  app.querySelector("#save").onclick=async()=>{
+    const name=app.querySelector("#f-name").value.trim(),desc=app.querySelector("#f-desc").value.trim(),end=app.querySelector("#f-end").value;
+    if(!name){toast("צריך שם לאירוע",true);return;}
+    if(!end){toast("צריך מועד סגירה",true);return;}
+    await guard(async()=>{
+      if(editing){await apiUpdateEvent(ev.id,{name,desc,regEnd:new Date(end).toISOString(),division:chosen});toast("השינויים נשמרו");go("event",{eventId:ev.id});}
+      else{const id=await apiCreateEvent({name,desc,regEnd:new Date(end).toISOString(),division:chosen});toast("האירוע נוצר");go("event",{eventId:id});}
+    });
+  };
+}
+
+/* ===================== Event detail ===================== */
+async function renderEvent(){
+  app.innerHTML=`<p class="notice" style="margin-top:40px">טוען…</p>`;
+  await guard(async()=>{
+    const events=await apiEvents(),ev=events.find(e=>e.id===state.eventId);
+    if(!ev){go("home");return;}
+    const regs=await apiParticipants(ev.id),open=isOpen(ev),div=DIVISIONS[ev.division];
+    let body;
+    if(open){
+      body=`
+        <div class="card fade" style="margin-top:14px">
+          <h3 class="serif" style="font-size:19px;margin:0 0 12px">הוספת משתתפים</h3>
+          <div class="addrow"><input class="nm" id="p-name" type="text" placeholder="שם מלא" maxlength="60"><input class="ph" id="p-phone" type="tel" placeholder="טלפון (לוואטסאפ)" maxlength="30"><button class="btn small" id="p-add">הוספה</button></div>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn small ghost" id="from-list">＋ הוספה מרשימה</button>${regs.length?`<button class="btn small ghost" id="save-list">שמירת המשתתפים כרשימה</button>`:""}</div>
+          ${regs.length?`<div class="chips">${regs.map(r=>`<span class="chip">${esc(r.name)}${r.phone?` <small>${esc(r.phone)}</small>`:""}<button class="x" data-rm="${r.id}">×</button></span>`).join("")}</div>`:`<p style="color:var(--muted);font-size:14px;margin:14px 0 0">עדיין לא נוספו משתתפים.</p>`}
+          <div class="row-between" style="margin-top:18px"><b style="color:var(--muted);font-weight:500">סה״כ ${regs.length} משתתפים</b><button class="btn gold" id="close-reg" ${regs.length?"":"disabled"}>סגירת ההרשמה עכשיו</button></div>
+        </div>`;
+    }else{
+      body=renderDistribution(ev,regs,div)+`<div style="margin-top:16px"><button class="btn ghost" id="reopen">פתיחת ההרשמה מחדש</button></div>`;
+    }
+    app.innerHTML=`
+      <button class="link" id="back">→ חזרה</button>
+      <div class="row-between" style="margin-top:10px"><h2 class="section-label">${esc(ev.name)}</h2><span class="pill ${open?"open":"closed"}"><span class="dot"></span>${open?"ההרשמה פתוחה":"ההרשמה נסגרה"}</span></div>
+      ${ev.desc?`<p style="color:var(--muted);margin:2px 0 0;font-size:14.5px">${esc(ev.desc)}</p>`:""}
+      <div class="meta" style="margin-top:10px"><span>${open?"נסגר":"נסגר ב"}: <b>${fmtDate(ev.regEnd)}</b></span><span>לפי <b>${div.label}</b> (${div.parts.length})</span></div>
+      <div style="display:flex;gap:8px;margin-top:4px"><button class="btn small ghost" id="edit">עריכת פרטים</button><button class="btn small danger" id="del">מחיקה</button></div>
+      ${body}`;
+    app.querySelector("#back").onclick=()=>go("home");
+    app.querySelector("#edit").onclick=()=>go("create",{editEvent:ev});
+    app.querySelector("#del").onclick=async()=>{if(!await confirmModal("למחוק את האירוע וכל המשתתפים?"))return;await guard(async()=>{await apiDeleteEvent(ev.id);toast("האירוע נמחק");go("home");});};
+
+    if(open){
+      async function addP(){const name=app.querySelector("#p-name").value.trim(),phone=app.querySelector("#p-phone").value.trim();if(!name){toast("צריך שם",true);return;}await guard(async()=>{await apiAddParticipants(ev.id,[{name,phone}]);render();});}
+      app.querySelector("#p-add").onclick=addP;
+      app.querySelector("#p-name").addEventListener("keydown",e=>{if(e.key==="Enter")addP();});
+      app.querySelectorAll("[data-rm]").forEach(b=>b.onclick=async()=>{await guard(async()=>{await apiRemoveParticipant(b.dataset.rm);render();});});
+      app.querySelector("#from-list").onclick=()=>pickList(ev,regs);
+      const sl=app.querySelector("#save-list");if(sl)sl.onclick=async()=>{const name=await promptModal("שם הרשימה החדשה");if(!name)return;await guard(async()=>{const id=await apiCreateList(name);await apiAddMembers(id,regs.map(r=>({name:r.name,phone:r.phone})));toast("נשמר כרשימה");});};
+      app.querySelector("#close-reg").onclick=async()=>{if(!regs.length)return;if(!await confirmModal("לסגור את ההרשמה ולערוך את החלוקה?","סגירה"))return;await guard(async()=>{await apiUpdateEvent(ev.id,{closed:true});toast("ההרשמה נסגרה — הנה החלוקה");render();});};
+    }else{
+      app.querySelector("#reopen").onclick=async()=>{await guard(async()=>{const patch={closed:false};if(new Date(ev.regEnd).getTime()<=Date.now()){patch.regEnd=new Date(Date.now()+7*864e5).toISOString();toast("ההרשמה נפתחה — המועד עודכן לשבוע קדימה");}else toast("ההרשמה נפתחה מחדש");await apiUpdateEvent(ev.id,patch);render();});};
+      bindDistribution(ev,regs,div);
+    }
+  });
+}
+
+async function pickList(ev,regs){
+  await guard(async()=>{
+    const lists=await apiLists();
+    const inner=lists.length?lists.map(l=>`<div class="list-pick"><div><b>${esc(l.name)}</b><br><small style="color:var(--muted)">${l.members.length} משתתפים</small></div><button class="btn small" data-add="${l.id}">הוספה</button></div>`).join(""):`<p style="color:var(--muted);margin:0">אין רשימות שמורות. אפשר ליצור אותן במסך "רשימות".</p>`;
+    const o=modal(`<h3 class="serif" style="margin:0 0 12px;font-size:19px">הוספה מרשימה</h3>${inner}<div style="margin-top:14px"><button class="btn ghost" data-c>סגירה</button></div>`);
+    o.querySelector("[data-c]").onclick=()=>o.remove();
+    o.querySelectorAll("[data-add]").forEach(b=>b.onclick=async()=>{
+      const l=lists.find(x=>x.id===b.dataset.add);
+      const have=new Set(regs.map(r=>r.name.trim().toLowerCase()));
+      const toAdd=l.members.filter(m=>!have.has(m.name.trim().toLowerCase()));
+      o.remove();await guard(async()=>{await apiAddParticipants(ev.id,toAdd);toast(toAdd.length?`נוספו ${toAdd.length} משתתפים`:"כולם כבר ברשימה");render();});
+    });
+  });
+}
+
+function renderDistribution(ev,regs,div){
+  if(regs.length===0)return `<div class="empty fade"><div class="em-title">אין משתתפים</div><div>לא נוספו משתתפים לאירוע הזה.</div></div>`;
+  const {numGroups}=distribute(regs,div.parts.length);
+  return `
+    <div class="summary fade" style="margin-top:16px">
+      <div class="stat"><div class="n">${regs.length}</div><div class="l">משתתפים</div></div>
+      <div class="stat"><div class="n">${numGroups}</div><div class="l">${numGroups===1?"ספר דברים":"מחזורי ספר דברים"}</div></div>
+      <div class="stat"><div class="n">${div.parts.length}</div><div class="l">${div.label} במחזור</div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin:16px 0 6px;flex-wrap:wrap"><button class="btn wa small" id="share-all">שיתוף כל החלוקה בוואטסאפ</button></div>
+    <div style="margin:8px 0"><input id="dist-search" type="text" placeholder="חיפוש שם בחלוקה…"></div>
+    <div id="dist-body"></div>`;
+}
+function bindDistribution(ev,regs,div){
+  if(!regs.length)return;
+  const sa=document.getElementById("share-all");if(sa)sa.onclick=()=>window.open(waLink("",distText(ev,regs,div)),"_blank");
+  const s=document.getElementById("dist-search");if(s)s.oninput=()=>{state.search=s.value.trim();paintDistribution(ev,regs,div);};
+  paintDistribution(ev,regs,div);
+}
+function paintDistribution(ev,regs,div){
+  const body=document.getElementById("dist-body");if(!body)return;
+  const parts=div.parts,{groups}=distribute(regs,parts.length),q=state.search;let html="";
+  groups.forEach((g,gi)=>{
+    const rows=g.map((a,idx)=>{
+      const me=q&&a.person.name.includes(q);const tags=a.parts.map(p=>`<span class="tag">${esc(parts[p])}</span>`).join("");
+      return `<div class="assign ${me?"me":""}"><span class="who">${esc(a.person.name)}</span><span class="parts">${tags}</span><button class="wa-mini" data-wa="${gi}-${idx}">וואטסאפ</button></div>`;
+    }).join("");
+    html+=`<div class="group-head"><span class="gname">${groups.length>1?`מחזור ${gi+1}`:"החלוקה"}</span><span class="gsub">${g.length} משתתפים · ספר דברים שלם</span></div><div class="card" style="padding:6px 14px">${rows}</div>`;
+  });
+  body.innerHTML=html;
+  body.querySelectorAll("[data-wa]").forEach(b=>b.onclick=()=>{const[gi,idx]=b.dataset.wa.split("-").map(Number);const a=groups[gi][idx];const txt=personText(ev,a.person.name,a.parts.map(p=>parts[p]));window.open(waLink(a.person.phone,txt),"_blank");});
+}
+
+/* ===================== Lists ===================== */
+async function renderLists(){
+  app.innerHTML=`<p class="notice" style="margin-top:40px">טוען…</p>`;
+  await guard(async()=>{
+    const lists=await apiLists();
+    let items;
+    if(lists.length===0)items=`<div class="empty fade"><div class="em-title">אין רשימות שמורות</div><div>צרו רשימה של משתתפים קבועים כדי להוסיף אותם לאירועים בלחיצה אחת.</div></div>`;
+    else items=`<div class="grid">${lists.map(l=>`<div class="card event-card fade"><div class="row-between"><h3>${esc(l.name)}</h3><span style="color:var(--muted);font-size:13.5px">${l.members.length} משתתפים</span></div><div class="row-between" style="margin-top:10px"><button class="btn small" data-open="${l.id}">פתיחה ועריכה</button><button class="link mut" data-del="${l.id}">מחיקה</button></div></div>`).join("")}</div>`;
+    app.innerHTML=`<button class="link" id="back">→ חזרה לאירועים</button><div class="row-between" style="margin-top:10px"><h2 class="section-label">רשימות משתתפים</h2><button class="btn" id="new-list">+ רשימה חדשה</button></div>${items}`;
+    app.querySelector("#back").onclick=()=>go("home");
+    app.querySelector("#new-list").onclick=async()=>{const name=await promptModal("שם הרשימה");if(!name)return;await guard(async()=>{const id=await apiCreateList(name);go("list",{listId:id});});};
+    app.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>go("list",{listId:b.dataset.open}));
+    app.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{if(!await confirmModal("למחוק את הרשימה?"))return;await guard(async()=>{await apiDeleteList(b.dataset.del);toast("הרשימה נמחקה");render();});});
+  });
+}
+async function renderListDetail(){
+  app.innerHTML=`<p class="notice" style="margin-top:40px">טוען…</p>`;
+  await guard(async()=>{
+    const lists=await apiLists(),l=lists.find(x=>x.id===state.listId);
+    if(!l){go("lists");return;}
+    app.innerHTML=`
+      <button class="link" id="back">→ חזרה לרשימות</button>
+      <div class="row-between" style="margin-top:10px"><h2 class="section-label">${esc(l.name)}</h2><button class="btn small ghost" id="rename">שינוי שם</button></div>
+      <div class="card fade" style="margin-top:14px">
+        <div class="addrow"><input class="nm" id="m-name" type="text" placeholder="שם מלא" maxlength="60"><input class="ph" id="m-phone" type="tel" placeholder="טלפון (לא חובה)" maxlength="30"><button class="btn small" id="m-add">הוספה</button></div>
+        ${l.members.length?`<div class="chips">${l.members.map(m=>`<span class="chip">${esc(m.name)}${m.phone?` <small>${esc(m.phone)}</small>`:""}<button class="x" data-rm="${m.id}">×</button></span>`).join("")}</div>`:`<p style="color:var(--muted);font-size:14px;margin:14px 0 0">הרשימה ריקה. הוסיפו משתתפים למעלה.</p>`}
+        <p style="color:var(--muted);font-size:13px;margin:14px 0 0">${l.members.length} משתתפים ברשימה</p>
+      </div>`;
+    app.querySelector("#back").onclick=()=>go("lists");
+    app.querySelector("#rename").onclick=async()=>{const name=await promptModal("שם הרשימה",l.name);if(!name)return;await guard(async()=>{await apiRenameList(l.id,name);render();});};
+    async function addM(){const name=app.querySelector("#m-name").value.trim(),phone=app.querySelector("#m-phone").value.trim();if(!name){toast("צריך שם",true);return;}await guard(async()=>{await apiAddMembers(l.id,[{name,phone}]);render();});}
+    app.querySelector("#m-add").onclick=addM;
+    app.querySelector("#m-name").addEventListener("keydown",e=>{if(e.key==="Enter")addM();});
+    app.querySelectorAll("[data-rm]").forEach(b=>b.onclick=async()=>{await guard(async()=>{await apiRemoveMember(b.dataset.rm);render();});});
+  });
+}
+</script>
+</body>
+</html>
