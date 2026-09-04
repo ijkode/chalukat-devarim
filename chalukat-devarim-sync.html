@@ -127,8 +127,8 @@
 
 <script>
 /* ===================== Config ===================== */
-const CFG_URL="";      // אפשר להזין כאן ישירות את כתובת הפרויקט (לא חובה)
-const CFG_KEY="";      // ואת מפתח ה-anon (לא חובה) — אחרת מזינים במסך ההגדרה
+const CFG_URL="https://vbvmghkomoduuprhkwls.supabase.co";      // אפשר להזין כאן ישירות את כתובת הפרויקט (לא חובה)
+const CFG_KEY="sb_publishable_SjXYJtpfMf4q2Ye7MQG-hw_L1mxofwW";      // ואת מפתח ה-anon (לא חובה) — אחרת מזינים במסך ההגדרה
 function getCfg(){ if(CFG_URL&&CFG_KEY)return{url:CFG_URL,key:CFG_KEY}; try{const v=localStorage.getItem("devarim:cfg");return v?JSON.parse(v):null;}catch(e){return null;} }
 function setCfg(url,key){ try{localStorage.setItem("devarim:cfg",JSON.stringify({url,key}));}catch(e){} }
 function clearCfg(){ try{localStorage.removeItem("devarim:cfg");}catch(e){} }
